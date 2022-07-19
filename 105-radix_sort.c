@@ -1,112 +1,89 @@
 #include "sort.h"
-
+#include <stdio.h>
 /**
- * arr_zero_init - initialize array by 0
- *
- * @array: array to be initialized
- * @size: size of the array
- */
-void arr_zero_init(int *array, int size)
+* getMax - A utility function to get maximum value in arr[]
+* @arr: array
+* @n: size of the array
+* Return: array
+*/
+int getMax(int *arr, int n)
 {
-	int i;
+	int i, max = arr[0];
 
-	for (i = 0; i < size; i++)
-		array[i] = 0;
-}
-
-/**
- * get_max - gets the maximum value in the array
- *
- * @array: array to get max value from
- * @size: size of the array
- *
- * Return: maximum value in the array
- */
-int get_max(int *array, size_t size)
-{
-	int max;
-	size_t i;
-
-	max = array[0];	/* start from first index */
-
-	for (i = 1; i < size; i++)
-	{
-		if (max < array[i])
-			max = array[i];
-	}
-
+	for (i = 1; i < n; i++)
+		if (arr[i] > max)
+			max = arr[i];
 	return (max);
 }
 
 /**
- * sort_counter - sorts an array using the counting_sort
- * algorithm for LSD radix sort algorithm
- *
- * @array: initial array
- * @size: size of the array
- * @place: position of the LSD (least significant digit)
- */
-void sort_counter(int *array, size_t size, int place)
+* countSort - A function to do counting sort of arr[] according to
+* the digit represented by exp.
+* @arr: array
+* @n: size of the array
+* @exp: exp is 10^i
+* @output: array to save the temporary values
+*/
+void countSort(int *arr, size_t n, int exp, int *output)
 {
-	int k, *position, *sumPosition, *sorted;
-	size_t i, j;
+	int i;
+	int count[10] = {0};
 
-	position = malloc(sizeof(int) * size);
-	if (!position)
-		return;
-	arr_zero_init(position, size);
+	/* Store count of occurrences in count[] */
+	for (i = 0; i < (int)n; i++)
+		count[(arr[i] / exp) % 10]++;
 
-	for (i = 0; i < size; i++)
-		position[(array[i] / place) % 10] += 1;    /* position at LSD */
+	/*
+	* Change count[i] so that count[i] now contains actual
+    * position of this digit in output[]
+	*/
+	for (i = 1; i < 10; i++)
+		count[i] += count[i - 1];
 
-	sumPosition = malloc(sizeof(int) * size);
-	if (!sumPosition)
-		return;
-	arr_zero_init(sumPosition, size);
-	sumPosition[0] = position[0];   /* make first index equal */
-
-	for (j = 1; j < size; j++)
-		sumPosition[j] = position[j] + sumPosition[j - 1];
-
-	free(position);
-
-	sorted = malloc(sizeof(int) * size);
-	if (!sorted)
-		return;
-	arr_zero_init(sorted, size);
-
-	for (k = size - 1; k >= 0; k--)  /* get the sorted array */
+	/* Build the output array */
+	for (i = n - 1; i >= 0; i--)
 	{
-		sumPosition[(array[k] / place) % 10] -= 1;
-		sorted[sumPosition[(array[k] / place) % 10]] = array[k];
+		output[count[(arr[i] / exp) % 10] - 1] = arr[i];
+		count[(arr[i] / exp) % 10]--;
 	}
-	free(sumPosition);
 
-	for (i = 0; i < size; i++)  /* update array */
-		array[i] = sorted[i];
-	free(sorted);
+	/*
+	* Copy the output array to arr[], so that arr[] now
+    * contains sorted numbers according to current digit
+	*/
+	for (i = 0; i < (int)n; i++)
+		arr[i] = output[i];
+	/*print_array(arr, n);*/
 }
 
 /**
- * radix_sort - peforms the the LSD (least significant Digit)
- * radix sort algorithm
- *
- * @array: array to be sorted
- * @size: size of the array
- */
+* radix_sort - The main function to that sorts arr[]
+* of size n using Radix Sort
+* @array: array
+* @size: size of the array
+*/
 void radix_sort(int *array, size_t size)
 {
-	int max, position = 1;
+	/* Find the maximum number to know number of digits */
+	int exp, maximum = 0;
+	int *output = '\0'; /* output array should be n(size) */
 
-	if (!array || size < 2)
+	if (array == '\0' || size < 2)
 		return;
 
-	max = get_max(array, size);
-
-	while ((max / position) > 0)
+	maximum = getMax(array, size);
+	output = malloc(size * sizeof(int));
+	if (output == '\0')
+		return;
+	/*
+	* Do counting sort for every digit. Note that instead
+    * of passing digit number, exp is passed. exp is 10^i
+    * where i is current digit number
+	*/
+	for (exp = 1; maximum / exp > 0; exp *= 10)
 	{
-		sort_counter(array, size, position);
+		countSort(array, size, exp, output);
 		print_array(array, size);
-		position *= 10;
 	}
+	free(output);
 }
